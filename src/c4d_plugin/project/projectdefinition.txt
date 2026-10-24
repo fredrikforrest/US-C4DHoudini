@@ -1,0 +1,19 @@
+// Maxon project tool definition for the Cinema 4D plugin.
+// Place this plugin folder at <c4d sdk>/plugins/us_c4dhoudini (or symlink it),
+// run tools/sync_plugin_sources.sh to copy src/hapi_core into source/hapi_core,
+// then run the project tool:  kernel_app -g_updateproject=<sdk>/plugins/us_c4dhoudini
+// See README.md "Building the Cinema 4D plugin".
+Platform=Win64;OSX;Linux
+Type=DLL
+APIS=cinema.framework;core.framework;math.framework;image.framework
+C4D=true
+stylecheck.level=0
+stylecheck.enum-registration=false
+stylecheck.enum-class=false
+ModuleId=com.untitledservices.c4dhoudini
+
+// HAPI headers from the Houdini install (only headers; libHAPIL is loaded at runtime).
+AdditionalIncludeDirectories=$(HFS)/toolkit/include;../source/hapi_core
+
+// HAPI_SUPPRESS_DEPRECATIONS keeps the generated function table warning free.
+Define=HAPI_SUPPRESS_DEPRECATIONS

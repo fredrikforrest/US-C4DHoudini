@@ -1,0 +1,19 @@
+build/
+cmake-build-*/
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.xdl64
+*.xlib
+*.pdb
+.DS_Store
+# Copied into place by tools/sync_plugin_sources.sh; the originals live in src/hapi_core
+src/c4d_plugin/source/hapi_core/
+# Maxon project tool output
+src/c4d_plugin/project/*.vcxproj*
+src/c4d_plugin/project/*.xcodeproj/
+src/c4d_plugin/project/*.sln
+src/c4d_plugin/project/Makefile*

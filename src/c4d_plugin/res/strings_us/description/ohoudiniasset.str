@@ -1,0 +1,37 @@
+STRINGTABLE Ohoudiniasset
+{
+    Ohoudiniasset               "Houdini Asset";
+    HDA_GROUP_ASSET             "Asset";
+    HDA_FILE                    "HDA File";
+    HDA_ASSET_INDEX             "Asset";
+    HDA_ASSET_LABEL             "Loaded";
+    HDA_AUTO_COOK               "Auto Cook";
+    HDA_COOK_ON_FRAME           "Cook On Frame Change";
+    HDA_COOK                    "Cook";
+    HDA_RELOAD                  "Reload HDA";
+    HDA_STATUS                  "Status";
+    HDA_GROUP_PARMS             "Parameters";
+    HDA_GROUP_INPUTS            "Inputs";
+    HDA_INPUT_INFO              "Inputs";
+    HDA_INPUT_0                 "Input 1";
+    HDA_INPUT_1                 "Input 2";
+    HDA_INPUT_2                 "Input 3";
+    HDA_INPUT_3                 "Input 4";
+    HDA_GROUP_CONVERT           "Conversion";
+    HDA_SCALE                   "Scale (Houdini m -> cm)";
+    HDA_FLIP_Z                  "Flip Z (Right- To Left-Handed)";
+    HDA_REVERSE_WINDING         "Reverse Polygon Winding";
+    HDA_IMPORT_NORMALS          "Normals";
+    HDA_IMPORT_UVS              "UVs";
+    HDA_IMPORT_COLORS           "Vertex Colors";
+    HDA_IMPORT_GROUPS           "Groups As Selections";
+    HDA_IMPORT_MATERIALS        "Materials";
+    HDA_INSTANCE_MODE           "Instancers";
+    HDA_INSTANCE_MODE_MULTI     "Multi-Instance";
+    HDA_INSTANCE_MODE_RENDER    "Render Instances";
+    HDA_INSTANCE_MODE_COPIES    "Polygon Copies";
+    HDA_PHONG_ANGLE             "Phong Angle";
+    HDA_GROUP_LOG               "Cook Log";
+    HDA_COOK_LOG                "Messages";
+    HDA_SHOW_LOG                "Print To Console";
+}

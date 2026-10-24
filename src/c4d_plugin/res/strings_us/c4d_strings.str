@@ -1,0 +1,6 @@
+STRINGTABLE
+{
+    IDS_HOUDINI_ASSET           "Houdini Asset";
+    IDS_HOUDINI_SESSION_INFO    "Houdini Engine: Session Info";
+    IDS_HOUDINI_SESSION_RESTART "Houdini Engine: Restart Session";
+}

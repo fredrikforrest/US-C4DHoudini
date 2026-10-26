@@ -5,6 +5,11 @@ how much they unblock.
 
 ## 0. Validate the proof of concept (days)
 
+0. Licensing first: run `hapi_probe` under the Indie license (does the
+   engine accept the plugin?), email SideFX, and run `tools/hom_probe.py`
+   on the same HDAs. Decide which backend is primary. See
+   `docs/indie-licensing-and-alternatives.md`.
+
 1. Run `hapi_probe` on a machine with Houdini against three HDAs: a simple
    SOP asset, an OBJ subnet asset with several objects, one with packed
    primitive instancing. Check cook time, parm tree, OBJ facing/scale.
@@ -16,6 +21,11 @@ how much they unblock.
 4. Decide the winding default from what you see (switch is in the UI).
 
 ## 1. Make it usable day to day (2 to 4 weeks)
+
+- HOM backend in the plugin: a `HomBackend` that fills `ParmSet`,
+  `AssetOutput` and consumes `InputMesh` through the bridge protocol
+  (spawn hython, or attach to a Houdini GUI running `start_in_ui`), with
+  a preference to choose HAPI or HOM. Shelf tool for the attached mode.
 
 - Multiparm add/remove in the UI (`InsertMultiparmInstance` /
   `RemoveMultiparmInstance`, then rebuild description).

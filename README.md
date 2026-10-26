@@ -30,6 +30,8 @@ src/hapi_core/                    host-neutral C++17 core, no Cinema 4D dependen
                                   Cinema meshes/splines -> Houdini input nodes, merge nodes
   GeoMath.h                       Houdini <-> Cinema 4D space (unit scale, Z flip, winding)
 src/hapi_probe/                   CLI that loads an HDA, prints parms, sets values, cooks, dumps OBJ
+src/hom_bridge/                   Indie-safe second backend: hython server + pure-Python client
+tools/hom_probe.py                hapi_probe's counterpart for the HOM backend
 src/c4d_plugin/                   the Cinema 4D plugin (Maxon project tool layout)
   source/HoudiniAssetObject.*     ObjectData generator: dynamic description, inputs, cook, convert
   source/HoudiniGeoConvert.*      PolygonObject/SplineObject/InstanceObject building, tags
@@ -47,6 +49,7 @@ docs/                             architecture, what was borrowed from each plug
 | `hapi_core`, `hapi_probe`, tests | Compiles with GCC 13 (`-Wall -Wextra`, clean). `ctest`: 2/2 pass. |
 | Cinema 4D plugin | Written against the 2024/2025 C++ SDK, **not compiled yet**: the Maxon SDK is not available in the environment this was authored in. Expect a short round of signature fixes (see "Known compile risks"). |
 | End-to-end with Houdini | Not run yet: no Houdini install here. `hapi_probe` is the first thing to run on a machine that has one. |
+| HOM backend (`src/hom_bridge`) | Protocol round-trips in a unit check; the hython side is syntax-checked only. `tools/hom_probe.py` is its first real test. |
 
 ### Building the core and the probe
 
@@ -155,10 +158,22 @@ In priority order, mirroring the Unreal/Unity ones so existing assets work:
 
 Vertex attributes win over point attributes, point over primitive.
 
-## Licensing reminder
+## Licensing: Houdini Indie
 
-Every machine that cooks needs a Houdini Engine license (Engine, Indie or
-FX). Render nodes included. The roadmap has a "bake to Alembic/VDB" item for
+Houdini Engine refuses Indie licenses for plugins that are not on SideFX's
+authorised list (error 160). SideFX's licensing docs list Cinema 4D on that
+list because of Maxon's old bridge, so whether this plugin passes the check
+is an open question; `hapi_probe` answers it in minutes and SideFX should
+be asked in writing. Independently of that, Houdini Indie ships with three
+Engine Indie licenses that cover `hython`, which is enough to run the same
+functionality through Houdini's Python object model. That backend lives in
+`src/hom_bridge/` (hython server, pure-Python client, `tools/hom_probe.py`)
+and fills the same neutral structures as the HAPI core, so the Cinema side
+is shared. Full analysis: `docs/indie-licensing-and-alternatives.md`.
+
+Every machine that cooks needs a license either way (an Engine license for
+the HAPI backend, an Engine Indie or Indie seat for the HOM backend).
+Render nodes included; the roadmap has a "bake to Alembic/VDB" item for
 that reason.
 
 ## Coordinate conventions (verify first on a real HDA)

@@ -1,0 +1,70 @@
+From ace78ff838c1fd4f136de455fbd84712de365c6f Mon Sep 17 00:00:00 2001
+From: fredrikforrest <fredrik@untitledservices.com>
+Date: Fri, 30 Oct 2026 23:45:19 +0000
+Subject: [PATCH 1/2] BLI: build BLI_ustring.hh against OpenImageIO 2.x as well
+ as 3.x
+
+- Use the 'OIIO' namespace alias: the unversioned 'OpenImageIO' alias only
+  exists in OpenImageIO 3.x.
+- 'Strutil::strhash64' is 3.x only; 2.x has 'strhash' (64 bit on 64 bit
+  platforms, and what ustring::make_unique uses there).
+- 2.x 'ustring' is not trivially copyable, so the _ustr literal cannot cache
+  it in std::atomic; fall back to a plain function-local static.
+
+Needed to build against distro packages (Ubuntu 24.04 ships OpenImageIO 2.4).
+---
+ source/blender/blenlib/BLI_ustring.hh | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/source/blender/blenlib/BLI_ustring.hh b/source/blender/blenlib/BLI_ustring.hh
+index 3b29e3f8..0797594d 100644
+--- a/source/blender/blenlib/BLI_ustring.hh
++++ b/source/blender/blenlib/BLI_ustring.hh
+@@ -28,7 +28,7 @@ class UString {
+    * operator overloads (especially equality comparison between UString, StringRef, std::string,
+    * std::string_view, OpenImageIO::string_view, etc.).
+    */
+-  OpenImageIO::ustring ustr_;
++  OIIO::ustring ustr_;
+ 
+  public:
+   UString() = default;
+@@ -115,7 +115,13 @@ template<> struct DefaultHash<UString> {
+   constexpr uint64_t operator()(const StringRef value) const
+   {
+     /* This is the hash function used by OpenImageIO::ustring::make_unique internally. */
+-    return OpenImageIO::Strutil::strhash64(value.size(), value.data());
++#if OIIO_VERSION_MAJOR >= 3
++    return OIIO::Strutil::strhash64(value.size(), value.data());
++#else
++    /* OpenImageIO 2.x only has `strhash`, which is 64 bit on 64 bit platforms and is what
++     * `ustring::make_unique` uses there. */
++    return uint64_t(OIIO::Strutil::strhash(value.size(), value.data()));
++#endif
+   }
+ };
+ 
+@@ -142,6 +148,7 @@ template<FixedString FStr> inline UString operator""_ustr()
+    *  - It is valid to initialize the static variable more than once and the result will still be
+    *    the same because the string does not change. So a double checked lock is not needed.
+    */
++#if OIIO_VERSION_MAJOR >= 3
+   /* This is initialized to null by default. */
+   static std::atomic<UString> static_ustr;
+   UString ustr = static_ustr.load(std::memory_order_relaxed);
+@@ -150,6 +157,12 @@ template<FixedString FStr> inline UString operator""_ustr()
+     static_ustr.store(ustr, std::memory_order_relaxed);
+   }
+   return ustr;
++#else
++  /* OpenImageIO 2.x `ustring` is not trivially copyable, so it can't be wrapped in
++   * `std::atomic`. Fall back to the simple thread-safe static initialization. */
++  static const UString ustr = UString::from_ptr_noinline(FStr.data);
++  return ustr;
++#endif
+ }
+ 
+ /**
+-- 
+2.43.0
+

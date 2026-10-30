@@ -1,0 +1,117 @@
+From f0b9ccb9d2501c1590b1b0ae489acb4a718e2705 Mon Sep 17 00:00:00 2001
+From: fredrikforrest <fredrik@untitledservices.com>
+Date: Fri, 30 Oct 2026 23:51:59 +0000
+Subject: [PATCH 2/2] Object: add example fork operator OBJECT_OT_fork_hello
+
+A minimal C++ operator in its own file, registered with one line in
+object_ops.cc, callable as bpy.ops.object.fork_hello(). Serves as the
+template for real fork features and as a smoke test of the build loop.
+---
+ source/blender/editors/object/CMakeLists.txt  |  1 +
+ .../editors/object/object_fork_example.cc     | 53 +++++++++++++++++++
+ .../blender/editors/object/object_intern.hh   |  4 ++
+ source/blender/editors/object/object_ops.cc   |  1 +
+ 4 files changed, 59 insertions(+)
+ create mode 100644 source/blender/editors/object/object_fork_example.cc
+
+diff --git a/source/blender/editors/object/CMakeLists.txt b/source/blender/editors/object/CMakeLists.txt
+index 01f13e90..66adea72 100644
+--- a/source/blender/editors/object/CMakeLists.txt
++++ b/source/blender/editors/object/CMakeLists.txt
+@@ -29,6 +29,7 @@ set(SRC
+   object_collection.cc
+   object_constraint.cc
+   object_data_transfer.cc
++  object_fork_example.cc
+   object_data_transform.cc
+   object_edit.cc
+   object_hook.cc
+diff --git a/source/blender/editors/object/object_fork_example.cc b/source/blender/editors/object/object_fork_example.cc
+new file mode 100644
+index 00000000..278d2879
+--- /dev/null
++++ b/source/blender/editors/object/object_fork_example.cc
+@@ -0,0 +1,53 @@
++/* SPDX-FileCopyrightText: 2026 Blender Authors
++ *
++ * SPDX-License-Identifier: GPL-2.0-or-later */
++
++/** \file
++ * \ingroup edobj
++ *
++ * Example operator added by the fork. It exists to demonstrate the smallest
++ * possible C++ feature: a new file, one registration line, callable from
++ * Python as `bpy.ops.object.fork_hello()`.
++ */
++
++#include "DNA_object_types.h"
++
++#include "BKE_context.hh"
++#include "BKE_report.hh"
++
++#include "WM_api.hh"
++#include "WM_types.hh"
++
++#include "ED_screen.hh"
++
++#include "object_intern.hh"
++
++namespace blender::ed::object {
++
++static wmOperatorStatus fork_hello_exec(bContext *C, wmOperator *op)
++{
++  const Object *ob = CTX_data_active_object(C);
++  if (ob == nullptr) {
++    BKE_report(op->reports, RPT_INFO, "Hello from the fork: no active object");
++    return OPERATOR_FINISHED;
++  }
++  BKE_reportf(op->reports, RPT_INFO, "Hello from the fork: active object is \"%s\"", ob->id.name + 2);
++  return OPERATOR_FINISHED;
++}
++
++void OBJECT_OT_fork_hello(wmOperatorType *ot)
++{
++  /* Identifiers. */
++  ot->name = "Fork Hello";
++  ot->description = "Report the active object (example operator added by the fork)";
++  ot->idname = "OBJECT_OT_fork_hello";
++
++  /* API callbacks. */
++  ot->exec = fork_hello_exec;
++  ot->poll = ED_operator_objectmode;
++
++  /* Flags. */
++  ot->flag = OPTYPE_REGISTER;
++}
++
++}  // namespace blender::ed::object
+diff --git a/source/blender/editors/object/object_intern.hh b/source/blender/editors/object/object_intern.hh
+index cc50e71e..1eb80e3c 100644
+--- a/source/blender/editors/object/object_intern.hh
++++ b/source/blender/editors/object/object_intern.hh
+@@ -116,6 +116,10 @@ void OBJECT_OT_select_more(wmOperatorType *ot);
+ void OBJECT_OT_select_less(wmOperatorType *ot);
+ void OBJECT_OT_select_same_collection(wmOperatorType *ot);
+ 
++/* object_fork_example.cc */
++
++void OBJECT_OT_fork_hello(wmOperatorType *ot);
++
+ /* object_add.cc */
+ 
+ void OBJECT_OT_add(wmOperatorType *ot);
+diff --git a/source/blender/editors/object/object_ops.cc b/source/blender/editors/object/object_ops.cc
+index 12f17cad..bcf0290b 100644
+--- a/source/blender/editors/object/object_ops.cc
++++ b/source/blender/editors/object/object_ops.cc
+@@ -101,6 +101,7 @@ void operatortypes_object()
+   WM_operatortype_append(OBJECT_OT_volume_add);
+   WM_operatortype_append(OBJECT_OT_volume_import);
+   WM_operatortype_append(OBJECT_OT_add);
++  WM_operatortype_append(OBJECT_OT_fork_hello);
+   WM_operatortype_append(OBJECT_OT_lattice_add_to_selected);
+   WM_operatortype_append(OBJECT_OT_add_named);
+   WM_operatortype_append(OBJECT_OT_transform_to_mouse);
+-- 
+2.43.0
+

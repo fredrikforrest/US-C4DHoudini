@@ -12,11 +12,14 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC="${1:-$HOME/blender-fork/blender}"
 BUILD="${2:-$HOME/blender-fork/build}"
 JOBS="${JOBS:-$(nproc)}"
-# Eigen snapshot installed by scripts/fetch_eigen.sh (Ubuntu's Eigen 3.4.0 is too old).
-EIGEN_PREFIX="${EIGEN_PREFIX:-$HOME/blender-fork/deps/eigen}"
-if [ ! -f "$EIGEN_PREFIX/share/eigen3/cmake/Eigen3Config.cmake" ]; then
-  "$HERE/fetch_eigen.sh" "$EIGEN_PREFIX"
-fi
+# Libraries Ubuntu 24.04 ships too old, built by scripts/fetch_*.sh on first use.
+DEPS="${DEPS:-$HOME/blender-fork/deps}"
+EIGEN_PREFIX="${EIGEN_PREFIX:-$DEPS/eigen}"   # Eigen 3.4.0 -> pinned 5.x snapshot
+FMT_PREFIX="${FMT_PREFIX:-$DEPS/fmt}"         # fmt 9.1 -> 12.1 (format_as support)
+OCIO_PREFIX="${OCIO_PREFIX:-$DEPS/ocio}"      # OpenColorIO 2.1.3 -> 2.5.0
+[ -f "$EIGEN_PREFIX/share/eigen3/cmake/Eigen3Config.cmake" ] || "$HERE/fetch_eigen.sh" "$EIGEN_PREFIX"
+[ -f "$FMT_PREFIX/lib/cmake/fmt/fmt-config.cmake" ]          || "$HERE/fetch_fmt.sh" "$FMT_PREFIX"
+[ -f "$OCIO_PREFIX/lib/cmake/OpenColorIO/OpenColorIOConfig.cmake" ] || "$HERE/fetch_ocio.sh" "$OCIO_PREFIX" "$DEPS/src"
 
 NUMPY_INC="$(python3.13 -c 'import numpy; print(numpy.get_include())')"
 NUMPY_PATH="$(dirname "$(dirname "$NUMPY_INC")")"   # .../site-packages/numpy/_core/include -> site-packages
@@ -28,10 +31,14 @@ cmake -G Ninja \
   -DPYTHON_NUMPY_PATH="$(dirname "$NUMPY_PATH")" \
   -DPYTHON_NUMPY_INCLUDE_DIRS="$NUMPY_INC" \
   -DEigen3_DIR="$EIGEN_PREFIX/share/eigen3/cmake" \
-  -DCMAKE_PREFIX_PATH="$EIGEN_PREFIX" \
+  -Dfmt_DIR="$FMT_PREFIX/lib/cmake/fmt" \
+  -DOpenColorIO_DIR="$OCIO_PREFIX/lib/cmake/OpenColorIO" \
+  -DCMAKE_PREFIX_PATH="$EIGEN_PREFIX;$FMT_PREFIX;$OCIO_PREFIX" \
   -S "$SRC" -B "$BUILD"
 
 ninja -C "$BUILD" -j"$JOBS"
 echo
 echo "Built: $BUILD/bin/blender"
-"$BUILD/bin/blender" --version
+echo "OpenColorIO is a shared library outside the system path; run with:"
+echo "  LD_LIBRARY_PATH=$OCIO_PREFIX/lib $BUILD/bin/blender"
+LD_LIBRARY_PATH="$OCIO_PREFIX/lib" "$BUILD/bin/blender" --version

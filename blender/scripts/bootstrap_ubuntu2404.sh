@@ -26,7 +26,7 @@ apt-get install -y --no-install-recommends \
   libjpeg-dev libpng-dev libtiff-dev libwebp-dev libopenjp2-7-dev \
   zlib1g-dev libzstd-dev libdeflate-dev \
   libimath-dev libopenexr-dev libopenimageio-dev openimageio-tools libopencv-core-dev \
-  libopencolorio-dev libpystring-dev
+  libpystring-dev libyaml-cpp-dev
 
 # Core C++ libraries
 apt-get install -y --no-install-recommends \
@@ -44,4 +44,4 @@ apt-get install -y --no-install-recommends \
 apt-get install -y --no-install-recommends python3.13-dev python3.13-venv libpython3.13-dev
 python3.13 -m pip install --quiet numpy
 
-echo "Done. Next: scripts/build.sh"
+echo "Done. Next: scripts/build.sh (it fetches and builds Eigen, fmt and OpenColorIO on first run)"

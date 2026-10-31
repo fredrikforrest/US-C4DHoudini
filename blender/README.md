@@ -10,10 +10,11 @@ blender/
   docs/02-adding-features.md     recipes: Python operator, app template, C++ operator, node, DNA/RNA, modifier, IO, branding
   docs/03-fork-workflow.md       repository layout, tracking upstream LTS, keeping the diff small, releases
   cmake/fork_linux_syslibs.cmake CMake preset: build against Ubuntu 24.04 packages instead of Blender's prebuilt libs
-  cmake/ubuntu-ocio-shim/        fixes Ubuntu's broken OpenColorIO CMake package
   scripts/bootstrap_ubuntu2404.sh  apt packages + Python 3.13 NumPy
   scripts/fetch_eigen.sh         Eigen snapshot Blender pins (Ubuntu's 3.4.0 is too old)
-  scripts/build.sh               configure + ninja, prints the resulting binary
+  scripts/fetch_fmt.sh           fmt 12.1 (Ubuntu's 9.1 lacks format_as support)
+  scripts/fetch_ocio.sh          OpenColorIO 2.5 (Ubuntu's 2.1.3 fails Blender's >= 2.3 assert)
+  scripts/build.sh               runs the fetch scripts if needed, configures, builds, prints the binary
   patches/                       our commits on top of v5.2.3, as git format-patch files
 ```
 
@@ -76,23 +77,46 @@ means building that library from source (upstream's recipes are in
 
 1. **GCC 14** (Blender refuses GCC < 14). Ubuntu 24.04 ships 13 by default and
    14 in the archive; the kit installs `gcc-14`/`g++-14` and passes them to CMake.
-2. **OpenColorIO**: Ubuntu's CMake package resolves its include directory to
-   `/include`. `cmake/ubuntu-ocio-shim/` supplies a correct one.
-3. **OpenImageIO 2.4** vs code written for 3.x: `patches/0001-*.patch` guards
+2. **OpenColorIO 2.5**: Blender's GPU shader binder has
+   `static_assert(OCIO_VERSION_HEX >= 0x02030000)` and Ubuntu has 2.1.3 (whose
+   CMake package is also broken, resolving its include dir to `/include`).
+   `scripts/fetch_ocio.sh` clones the v2.5.0 tag from GitHub and builds it in
+   about two minutes; OCIO fetches its own minizip-ng.
+3. **fmt 12.1**: Blender formats `StringRef`/`UString` through `format_as()`
+   overloads, a fmt 10+ feature; Ubuntu has 9.1. `scripts/fetch_fmt.sh` builds
+   the pinned release as a static library.
+4. **OpenImageIO 2.4** vs code written for 3.x: `patches/0001-*.patch` guards
    the three incompatible lines in `BLI_ustring.hh`. Upstreamable.
-4. **Eigen**: libmv uses Eigen 5-era APIs. `scripts/fetch_eigen.sh` downloads
+5. **Eigen**: libmv uses Eigen 5-era APIs. `scripts/fetch_eigen.sh` downloads
    the exact commit upstream pins (SHA-256 verified) and installs headers only.
-5. **NumPy for Python 3.13** is not packaged by Ubuntu; it comes from pip and
+6. **NumPy for Python 3.13** is not packaged by Ubuntu; it comes from pip and
    its path is passed explicitly to CMake.
+7. **OpenImageIO's CMake package** references the `iconvert` tool and OpenCV
+   headers; `openimageio-tools` and `libopencv-core-dev` satisfy it.
+
+The binary links `libOpenColorIO.so.2.5` from `deps/ocio/lib`, which is not on
+the system library path, so run it with `LD_LIBRARY_PATH=~/blender-fork/deps/ocio/lib`
+(or install OCIO to `/usr/local`).
 
 ## Git LFS
 
 Blender keeps binary data in Git LFS: `release/datafiles/startup.blend`,
 `splash.png`, `preview.blend`, 152 brush icon `.dat` files, studio lights,
 color-management LUTs, the brush/node asset libraries under `assets/`, the app
-template startup files, and all of `tests/files`. The GitHub mirror serves the
-LFS objects to authenticated users. If they are missing you get
-`Detected incomplete startup blend` at configure time; `git lfs pull` fixes it.
+template startup files, and all of `tests/files`. The LFS objects are hosted
+on projects.blender.org, not on the GitHub mirror (the mirror's own README
+says to clone with `GIT_LFS_SKIP_SMUDGE=1`). After cloning the mirror, point
+LFS at upstream and pull:
+
+```sh
+git config lfs.url https://projects.blender.org/blender/blender.git/info/lfs
+git lfs pull
+```
+
+If the objects are missing you get `Detected incomplete startup blend` at
+configure time. In the preparation session projects.blender.org was not
+reachable, so the build used a placeholder `startup.blend`; see the build log
+below for what that means at runtime.
 
 ## Build log from the preparation session (2026-10-30)
 

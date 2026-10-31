@@ -13,10 +13,13 @@ How to own a Blender fork without drowning in merge conflicts.
 ```
 
 Upstream's canonical repository is Gitea at https://projects.blender.org/blender/blender.
-GitHub is a read-only mirror. Fork the GitHub mirror (Fork button) so the
-`git remote add upstream https://github.com/blender/blender.git` relationship
-is cheap, and so that `git lfs pull` has a working LFS endpoint (the mirror
-serves the LFS objects for anyone with a GitHub account).
+GitHub is a read-only mirror without the LFS objects. Fork the GitHub mirror
+(Fork button) so the `git remote add upstream https://github.com/blender/blender.git`
+relationship is cheap, and point Git LFS at upstream for the binary files:
+`git config lfs.url https://projects.blender.org/blender/blender.git/info/lfs`.
+Your own LFS-tracked changes (a new splash.png, startup.blend) then need
+either GitHub LFS on your fork (`git config lfs.url` back to your fork before
+pushing) or to be kept outside LFS; decide this before the first push.
 
 ### First-time setup (on a machine with normal internet access)
 
@@ -26,6 +29,7 @@ cd blender
 git remote add upstream https://github.com/blender/blender.git
 git fetch upstream --tags
 git checkout -b fork/main v5.2.3
+git config lfs.url https://projects.blender.org/blender/blender.git/info/lfs
 git lfs pull                       # startup.blend, splash.png, brush/node assets, test files
 git am ../US-C4DHoudini/blender/patches/*.patch   # the patches prepared in this session
 git push -u origin fork/main

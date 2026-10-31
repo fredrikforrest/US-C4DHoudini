@@ -9,7 +9,12 @@
 #
 # Needs from apt: libopenexr-dev libimath-dev libtiff-dev libpng-dev libjpeg-dev
 # libwebp-dev libopenjp2-7-dev libpugixml-dev libtbb-dev libdeflate-dev zlib1g-dev
-# (installed by bootstrap_ubuntu2404.sh). robin-map is fetched by OIIO itself.
+# (installed by bootstrap_ubuntu2404.sh). Only the header-only robin-map is
+# fetched by OIIO itself. libjpeg-turbo's CMake package and libuhdr are turned
+# off on purpose: with them OIIO builds a private libjpeg-turbo that would
+# export a second set of jpeg_* symbols next to the system libjpeg Blender links.
+# OpenJPEG is off because Ubuntu's OpenJPEG CMake package reports no version;
+# Blender reads JPEG 2000 through its own OpenJPEG code, not through OIIO.
 #
 #   scripts/fetch_oiio.sh [install-prefix] [source-cache-dir] [fmt-prefix] [ocio-prefix]
 set -euo pipefail
@@ -30,10 +35,12 @@ cmake -G Ninja -S "$SRC" -B "$BUILD" \
   -DBUILD_SHARED_LIBS=ON -DOIIO_BUILD_TOOLS=OFF -DOIIO_BUILD_TESTS=OFF -DBUILD_TESTING=OFF \
   -DUSE_PYTHON=OFF -DUSE_QT=OFF -DUSE_OPENCV=OFF -DUSE_FFMPEG=OFF -DUSE_FREETYPE=OFF \
   -DUSE_LIBHEIF=OFF -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=OFF -DUSE_JXL=OFF -DUSE_DCMTK=OFF -DUSE_NUKE=OFF \
-  -DUSE_TBB=ON -DUSE_WEBP=ON -DUSE_OPENJPEG=ON -DUSE_OPENCOLORIO=ON -DUSE_EXTERNAL_PUGIXML=ON \
+  -DUSE_TBB=ON -DUSE_WEBP=ON -DUSE_OPENCOLORIO=ON -DUSE_EXTERNAL_PUGIXML=ON \
+  -DENABLE_OpenJPEG=OFF \
   -DOIIO_INTERNALIZE_FMT=OFF -Dfmt_DIR="$FMT_PREFIX/lib/cmake/fmt" \
   -DOpenColorIO_DIR="$OCIO_PREFIX/lib/cmake/OpenColorIO" \
-  -DOpenImageIO_BUILD_MISSING_DEPS=all
+  -DENABLE_libjpeg-turbo=OFF -DENABLE_libuhdr=OFF \
+  -DOpenImageIO_BUILD_MISSING_DEPS=Robinmap
 cmake --build "$BUILD" -j"$(nproc)"
 cmake --install "$BUILD" > /dev/null
 echo "OpenImageIO ${OIIO_VERSION} installed to $PREFIX"

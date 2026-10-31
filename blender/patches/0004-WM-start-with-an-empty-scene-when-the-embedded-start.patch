@@ -1,0 +1,79 @@
+From ddfd6ab7f542bad0b4946fef14d6f2855094b150 Mon Sep 17 00:00:00 2001
+From: fredrikforrest <fredrik@untitledservices.com>
+Date: Sat, 31 Oct 2026 02:00:49 +0000
+Subject: [PATCH 4/4] WM: start with an empty scene when the embedded
+ startup.blend is unreadable
+
+When release/datafiles/startup.blend is a Git LFS pointer file instead of the
+real .blend (checkout without LFS objects), the embedded factory startup
+cannot be parsed and Blender crashed in wm_add_default() on a null scene.
+Create a scene, a workspace and an empty screen instead and warn loudly.
+Background mode and the Python API work normally; the UI is bare, so this is
+a development convenience, not a replacement for the real startup file.
+---
+ source/blender/windowmanager/intern/wm.cc     |  9 ++++++++
+ .../blender/windowmanager/intern/wm_files.cc  | 22 +++++++++++++++++++
+ 2 files changed, 31 insertions(+)
+
+diff --git a/source/blender/windowmanager/intern/wm.cc b/source/blender/windowmanager/intern/wm.cc
+index 1fcf24cf..9f60a350 100644
+--- a/source/blender/windowmanager/intern/wm.cc
++++ b/source/blender/windowmanager/intern/wm.cc
+@@ -536,12 +536,21 @@ void wm_add_default(Main *bmain, bContext *C)
+       BKE_libblock_alloc(bmain, ID_WM, "WinMan", 0));
+   wmWindow *win;
+   bScreen *screen = CTX_wm_screen(C); /* XXX: from file read hrmf. */
++  if (screen == nullptr) {
++    /* No screen in context: happens when the startup file could not be read and
++     * #wm_homefile_read_ex created fallback data, see there. */
++    screen = static_cast<bScreen *>(bmain->screens.first);
++  }
+   WorkSpace *workspace;
+   WorkSpaceLayout *layout = BKE_workspace_layout_find_global(bmain, screen, &workspace);
+ 
+   CTX_wm_manager_set(C, wm);
+   win = wm_window_new(bmain, wm, nullptr, false);
+   win->scene = CTX_data_scene(C);
++  if (win->scene == nullptr) {
++    win->scene = static_cast<Scene *>(bmain->scenes.first);
++    CTX_data_scene_set(C, win->scene);
++  }
+   STRNCPY_UTF8(win->view_layer_name, CTX_data_view_layer(C)->name);
+   BKE_workspace_active_set(win->workspace_hook, workspace);
+   BKE_workspace_active_layout_set(win->workspace_hook, win->winid, workspace, layout);
+diff --git a/source/blender/windowmanager/intern/wm_files.cc b/source/blender/windowmanager/intern/wm_files.cc
+index 686250cd..e6e309ca 100644
+--- a/source/blender/windowmanager/intern/wm_files.cc
++++ b/source/blender/windowmanager/intern/wm_files.cc
+@@ -1455,6 +1455,28 @@ void wm_homefile_read_ex(bContext *C,
+     }
+   }
+ 
++  if (!success && use_data) {
++    /* Neither the user's startup file nor the embedded factory startup could be read. This
++     * happens when `release/datafiles/startup.blend` in the source tree is a Git LFS pointer
++     * file instead of the real `.blend`. Create the minimum data Blender needs to start (a
++     * scene, a workspace and an empty screen) instead of crashing in #wm_add_default.
++     * The UI will be bare; background mode and the Python API work normally. */
++    CLOG_WARN(&LOG,
++              "Embedded startup.blend is not a valid blend file (Git LFS checkout missing?), "
++              "starting with an empty scene");
++    /* The context has no main at this point (see the note at the top of this function). */
++    Main *bmain_fallback = bmain;
++    CTX_data_main_set(C, bmain_fallback);
++    Scene *scene = BKE_scene_add(bmain_fallback, DATA_("Scene"));
++    WorkSpace *workspace = BKE_workspace_add(bmain_fallback, DATA_("Layout"));
++    bScreen *screen = BKE_id_new<bScreen>(bmain_fallback, DATA_("Layout"));
++    BKE_workspace_layout_add(bmain_fallback, *workspace, *screen, DATA_("Layout"));
++    CTX_data_scene_set(C, scene);
++    CTX_wm_screen_set(C, screen);
++    success = true;
++    loaded_factory_settings = true;
++  }
++
+   if (use_empty_data) {
+     BKE_blendfile_read_make_empty(C);
+   }
+-- 
+2.43.0
+

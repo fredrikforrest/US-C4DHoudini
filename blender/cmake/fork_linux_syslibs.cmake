@@ -86,6 +86,11 @@ set(WITH_MOD_REMESH          ON  CACHE BOOL "" FORCE)
 set(WITH_FREESTYLE           ON  CACHE BOOL "" FORCE)
 set(WITH_BULLET              ON  CACHE BOOL "" FORCE)
 set(WITH_LIBMV               ON  CACHE BOOL "" FORCE)
+# Ubuntu's Ceres links the system glog/gflags. Blender's bundled copies would
+# register the same command-line flags twice and abort at startup
+# ("flag 'v' was defined more than once"), so use the system ones everywhere.
+set(WITH_SYSTEM_GFLAGS       ON  CACHE BOOL "" FORCE)
+set(WITH_SYSTEM_GLOG         ON  CACHE BOOL "" FORCE)
 set(WITH_QUADRIFLOW          ON  CACHE BOOL "" FORCE)
 set(WITH_IO_WAVEFRONT_OBJ    ON  CACHE BOOL "" FORCE)
 set(WITH_IO_PLY              ON  CACHE BOOL "" FORCE)

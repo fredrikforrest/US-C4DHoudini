@@ -42,6 +42,7 @@ apt-get install -y --no-install-recommends \
 # Python 3.13 (the version Blender 5.2 is written against) plus NumPy.
 # Ubuntu 24.04's python3-numpy targets 3.12, so NumPy for 3.13 comes from pip.
 apt-get install -y --no-install-recommends python3.13-dev python3.13-venv libpython3.13-dev
-python3.13 -m pip install --quiet numpy
+# Modules Blender's bundled Python ships with and the extension system imports at startup.
+python3.13 -m pip install --quiet numpy cattrs requests zstandard certifi
 
 echo "Done. Next: scripts/build.sh (it fetches and builds Eigen, fmt and OpenColorIO on first run)"

@@ -40,6 +40,9 @@ cmake -G Ninja \
   -S "$SRC" -B "$BUILD"
 
 ninja -C "$BUILD" -j"$JOBS"
+# Copies scripts/, datafiles and the Python modules next to the binary (bin/5.2/).
+# Without this step Blender starts but has no UI scripts and no bpy modules.
+ninja -C "$BUILD" install > /dev/null
 echo
 echo "Built: $BUILD/bin/blender"
 echo "OpenColorIO and OpenImageIO are shared libraries outside the system path; run with:"

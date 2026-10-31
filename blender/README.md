@@ -63,7 +63,7 @@ The fork code is the same; only the dependency source differs.
 | OBJ / PLY / STL / FBX / glTF (Python) IO, FFmpeg video, OpenAL/PulseAudio audio | ON | |
 | Fluid (Mantaflow), ocean, remesh, Freestyle, Bullet, motion tracking (libmv) | ON | |
 | Cycles | OFF | not attempted here; OpenImageIO 3.1 is now available from `fetch_oiio.sh`, Embree 4.3 (apt) vs pinned 4.4 and OSL 1.15 (no package) remain. Likely the next thing to try. |
-| OpenSubdiv, Manifold (exact boolean), Haru (PDF export) | OFF | no Ubuntu package |
+| OpenSubdiv, Manifold (exact boolean), Haru (PDF export) | OFF | no Ubuntu package. **Without OpenSubdiv the Subdivision Surface modifier and Subdivide Mesh node return their input unchanged**, silently. Build OpenSubdiv from source before relying on this build for modeling. |
 | OpenVDB / NanoVDB volumes | OFF | Ubuntu has OpenVDB 10, Blender wants 13 |
 | USD, Hydra, Alembic, MaterialX | OFF | no package / too old |
 | Vulkan GPU backend | OFF | needs shaderc 2025.4, Ubuntu has 2023.8 |
@@ -124,8 +124,36 @@ configure time. In the preparation session projects.blender.org was not
 reachable, so the build used a placeholder `startup.blend`; see the build log
 below for what that means at runtime.
 
-## Build log from the preparation session (2026-10-30)
+## Results from the preparation session (2026-10-30/31)
 
-Recorded at the bottom of this file once the build finished:
+Environment: cloud container, Ubuntu 24.04, 4 cores, 15 GB RAM, no GPU, no
+access to projects.blender.org or download.blender.org (GitHub and GitLab reachable).
 
-<!-- BUILD-RESULTS -->
+| Item | Result |
+| --- | --- |
+| Source | `blender/blender` tag `v5.2.3` from the GitHub mirror, branch `fork/main` = v5.2.3 + the 4 patches in `patches/` |
+| Dependencies | Ubuntu packages + fetched Eigen (2 s), fmt (6 s), OpenColorIO 2.5.0 (2 min 15 s), OpenImageIO 3.1.13.1 (4 min 35 s) |
+| Configure | `cmake/fork_linux_syslibs.cmake`, 5202 ninja targets |
+| Compile | about 2 h 15 min wall time at `-j4` (interrupted once by a container restart, resumed incrementally). Peak RAM well under 15 GB. Build dir 1.2 GB, binary 109 MB. |
+| `blender --version` | `Blender 5.2.3 LTS`, build branch `fork/main` |
+| `scripts/smoke_test.sh` | passes: Python 3.13.17, `bpy.ops.object.fork_hello()` reports the active object, geometry-nodes modifier evaluates (Triangulate: 6 -> 12 faces), `.blend` save and reload round trip |
+| Headless render | EEVEE and Workbench both render to PNG through Mesa llvmpipe (`docs/eevee_headless_render.png`, 128 px, 18 s). The `EGL_BAD_MATCH` warnings printed on the way are harmless here. |
+| Not verified | The GUI. The container has no display, and the embedded `startup.blend` is a placeholder (see "Git LFS"), so a GUI session would start with an empty screen. Run `git lfs pull` and rebuild before judging the UI. |
+
+Compiler warnings aside, the only source changes needed were the four
+patches, three of which are plain version guards.
+
+### Caveats to remember
+
+- Subdivision Surface and the Subdivide Mesh node are silent no-ops without
+  OpenSubdiv (not packaged by Ubuntu). Build it from source or use the
+  official libraries before doing modeling work with this build.
+- No Cycles, OpenVDB, USD/Alembic, Vulkan, OpenXR, denoiser (see the table above).
+- Blender's bundled Python modules (`cattrs`, `requests`, `zstandard`,
+  `certifi`, `numpy`) must be present in the system Python 3.13; the bootstrap
+  script installs them with pip. The extensions client fails to register without `cattrs`.
+- `WITH_SYSTEM_GLOG`/`WITH_SYSTEM_GFLAGS` are forced ON: Ubuntu's Ceres links
+  the system glog, and Blender's bundled copy would register the same
+  command-line flags twice and abort at startup.
+- The local layout used throughout is `~/blender-fork/{blender,build,deps}`;
+  `scripts/build.sh` and `scripts/smoke_test.sh` take other paths as arguments.

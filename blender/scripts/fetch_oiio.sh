@@ -15,6 +15,10 @@
 # export a second set of jpeg_* symbols next to the system libjpeg Blender links.
 # OpenJPEG is off because Ubuntu's OpenJPEG CMake package reports no version;
 # Blender reads JPEG 2000 through its own OpenJPEG code, not through OIIO.
+# Tools stay ON because Blender's CMake requires the OpenImageIO::oiiotool target
+# (its image tests compare renders with oiiotool). OpenVDB is off because with
+# Ubuntu's OpenVDB 10 the plugin half-registers and leaves libOpenImageIO.so
+# with undefined openvdb_* symbols.
 #
 #   scripts/fetch_oiio.sh [install-prefix] [source-cache-dir] [fmt-prefix] [ocio-prefix]
 set -euo pipefail
@@ -32,11 +36,11 @@ fi
 BUILD="$SRCDIR/oiio-${OIIO_VERSION}-build"
 cmake -G Ninja -S "$SRC" -B "$BUILD" \
   -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PREFIX" \
-  -DBUILD_SHARED_LIBS=ON -DOIIO_BUILD_TOOLS=OFF -DOIIO_BUILD_TESTS=OFF -DBUILD_TESTING=OFF \
+  -DBUILD_SHARED_LIBS=ON -DOIIO_BUILD_TOOLS=ON -DOIIO_BUILD_TESTS=OFF -DBUILD_TESTING=OFF \
   -DUSE_PYTHON=OFF -DUSE_QT=OFF -DUSE_OPENCV=OFF -DUSE_FFMPEG=OFF -DUSE_FREETYPE=OFF \
   -DUSE_LIBHEIF=OFF -DUSE_GIF=OFF -DUSE_PTEX=OFF -DUSE_LIBRAW=OFF -DUSE_JXL=OFF -DUSE_DCMTK=OFF -DUSE_NUKE=OFF \
   -DUSE_TBB=ON -DUSE_WEBP=ON -DUSE_OPENCOLORIO=ON -DUSE_EXTERNAL_PUGIXML=ON \
-  -DENABLE_OpenJPEG=OFF \
+  -DENABLE_OpenJPEG=OFF -DENABLE_OpenVDB=OFF \
   -DOIIO_INTERNALIZE_FMT=OFF -Dfmt_DIR="$FMT_PREFIX/lib/cmake/fmt" \
   -DOpenColorIO_DIR="$OCIO_PREFIX/lib/cmake/OpenColorIO" \
   -DENABLE_libjpeg-turbo=OFF -DENABLE_libuhdr=OFF \

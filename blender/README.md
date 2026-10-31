@@ -14,6 +14,7 @@ blender/
   scripts/fetch_eigen.sh         Eigen snapshot Blender pins (Ubuntu's 3.4.0 is too old)
   scripts/fetch_fmt.sh           fmt 12.1 (Ubuntu's 9.1 lacks format_as support)
   scripts/fetch_ocio.sh          OpenColorIO 2.5 (Ubuntu's 2.1.3 fails Blender's >= 2.3 assert)
+  scripts/fetch_oiio.sh          OpenImageIO 3.1 (Ubuntu's 2.4 bundles an old fmt that clashes with fmt 12)
   scripts/build.sh               runs the fetch scripts if needed, configures, builds, prints the binary
   patches/                       our commits on top of v5.2.3, as git format-patch files
 ```
@@ -61,7 +62,7 @@ The fork code is the same; only the dependency source differs.
 | Python 3.13 API, NumPy | ON | system interpreter, NumPy from pip |
 | OBJ / PLY / STL / FBX / glTF (Python) IO, FFmpeg video, OpenAL/PulseAudio audio | ON | |
 | Fluid (Mantaflow), ocean, remesh, Freestyle, Bullet, motion tracking (libmv) | ON | |
-| Cycles | OFF | needs OpenImageIO 3.x, Embree 4.4, OSL 1.15; Ubuntu has OIIO 2.4, Embree 4.3, OSL 0.8 |
+| Cycles | OFF | not attempted here; OpenImageIO 3.1 is now available from `fetch_oiio.sh`, Embree 4.3 (apt) vs pinned 4.4 and OSL 1.15 (no package) remain. Likely the next thing to try. |
 | OpenSubdiv, Manifold (exact boolean), Haru (PDF export) | OFF | no Ubuntu package |
 | OpenVDB / NanoVDB volumes | OFF | Ubuntu has OpenVDB 10, Blender wants 13 |
 | USD, Hydra, Alembic, MaterialX | OFF | no package / too old |
@@ -85,8 +86,12 @@ means building that library from source (upstream's recipes are in
 3. **fmt 12.1**: Blender formats `StringRef`/`UString` through `format_as()`
    overloads, a fmt 10+ feature; Ubuntu has 9.1. `scripts/fetch_fmt.sh` builds
    the pinned release as a static library.
-4. **OpenImageIO 2.4** vs code written for 3.x: `patches/0001-*.patch` guards
-   the three incompatible lines in `BLI_ustring.hh`. Upstreamable.
+4. **OpenImageIO 3.1**: Ubuntu's 2.4 headers carry a private copy of fmt 8
+   that cannot coexist with fmt 12 in one translation unit, and Blender's
+   `BLI_ustring.hh` uses 3.x-only API. `scripts/fetch_oiio.sh` builds the
+   pinned 3.1.13.1 against the same external fmt and OpenColorIO. (The 2.4 API
+   gap itself is closed by `patches/0001-*.patch`, which stays useful for
+   anyone who has to build against OpenImageIO 2.x.)
 5. **Eigen**: libmv uses Eigen 5-era APIs. `scripts/fetch_eigen.sh` downloads
    the exact commit upstream pins (SHA-256 verified) and installs headers only.
 6. **NumPy for Python 3.13** is not packaged by Ubuntu; it comes from pip and
@@ -94,9 +99,10 @@ means building that library from source (upstream's recipes are in
 7. **OpenImageIO's CMake package** references the `iconvert` tool and OpenCV
    headers; `openimageio-tools` and `libopencv-core-dev` satisfy it.
 
-The binary links `libOpenColorIO.so.2.5` from `deps/ocio/lib`, which is not on
-the system library path, so run it with `LD_LIBRARY_PATH=~/blender-fork/deps/ocio/lib`
-(or install OCIO to `/usr/local`).
+The binary links `libOpenColorIO.so.2.5` and `libOpenImageIO.so.3.1` from
+`deps/ocio/lib` and `deps/oiio/lib`, which are not on the system library path,
+so run it with `LD_LIBRARY_PATH=~/blender-fork/deps/ocio/lib:~/blender-fork/deps/oiio/lib`
+(or install both to `/usr/local`).
 
 ## Git LFS
 

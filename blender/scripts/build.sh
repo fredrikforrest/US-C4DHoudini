@@ -17,9 +17,11 @@ DEPS="${DEPS:-$HOME/blender-fork/deps}"
 EIGEN_PREFIX="${EIGEN_PREFIX:-$DEPS/eigen}"   # Eigen 3.4.0 -> pinned 5.x snapshot
 FMT_PREFIX="${FMT_PREFIX:-$DEPS/fmt}"         # fmt 9.1 -> 12.1 (format_as support)
 OCIO_PREFIX="${OCIO_PREFIX:-$DEPS/ocio}"      # OpenColorIO 2.1.3 -> 2.5.0
+OIIO_PREFIX="${OIIO_PREFIX:-$DEPS/oiio}"      # OpenImageIO 2.4 -> 3.1.13.1
 [ -f "$EIGEN_PREFIX/share/eigen3/cmake/Eigen3Config.cmake" ] || "$HERE/fetch_eigen.sh" "$EIGEN_PREFIX"
 [ -f "$FMT_PREFIX/lib/cmake/fmt/fmt-config.cmake" ]          || "$HERE/fetch_fmt.sh" "$FMT_PREFIX"
 [ -f "$OCIO_PREFIX/lib/cmake/OpenColorIO/OpenColorIOConfig.cmake" ] || "$HERE/fetch_ocio.sh" "$OCIO_PREFIX" "$DEPS/src"
+[ -f "$OIIO_PREFIX/lib/cmake/OpenImageIO/OpenImageIOConfig.cmake" ] || "$HERE/fetch_oiio.sh" "$OIIO_PREFIX" "$DEPS/src" "$FMT_PREFIX" "$OCIO_PREFIX"
 
 NUMPY_INC="$(python3.13 -c 'import numpy; print(numpy.get_include())')"
 NUMPY_PATH="$(dirname "$(dirname "$NUMPY_INC")")"   # .../site-packages/numpy/_core/include -> site-packages
@@ -33,12 +35,13 @@ cmake -G Ninja \
   -DEigen3_DIR="$EIGEN_PREFIX/share/eigen3/cmake" \
   -Dfmt_DIR="$FMT_PREFIX/lib/cmake/fmt" \
   -DOpenColorIO_DIR="$OCIO_PREFIX/lib/cmake/OpenColorIO" \
-  -DCMAKE_PREFIX_PATH="$EIGEN_PREFIX;$FMT_PREFIX;$OCIO_PREFIX" \
+  -DOpenImageIO_DIR="$OIIO_PREFIX/lib/cmake/OpenImageIO" \
+  -DCMAKE_PREFIX_PATH="$EIGEN_PREFIX;$FMT_PREFIX;$OCIO_PREFIX;$OIIO_PREFIX" \
   -S "$SRC" -B "$BUILD"
 
 ninja -C "$BUILD" -j"$JOBS"
 echo
 echo "Built: $BUILD/bin/blender"
-echo "OpenColorIO is a shared library outside the system path; run with:"
-echo "  LD_LIBRARY_PATH=$OCIO_PREFIX/lib $BUILD/bin/blender"
-LD_LIBRARY_PATH="$OCIO_PREFIX/lib" "$BUILD/bin/blender" --version
+echo "OpenColorIO and OpenImageIO are shared libraries outside the system path; run with:"
+echo "  LD_LIBRARY_PATH=$OCIO_PREFIX/lib:$OIIO_PREFIX/lib $BUILD/bin/blender"
+LD_LIBRARY_PATH="$OCIO_PREFIX/lib:$OIIO_PREFIX/lib" "$BUILD/bin/blender" --version

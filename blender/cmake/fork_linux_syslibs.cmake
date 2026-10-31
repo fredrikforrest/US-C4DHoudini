@@ -20,10 +20,11 @@
 #        SDL (Blender uses SDL3), LLVM.
 
 set(WITH_LIBS_PRECOMPILED    OFF CACHE BOOL "" FORCE)
-# Three libraries are fetched and built by scripts/fetch_*.sh because Ubuntu's
+# Four libraries are fetched and built by scripts/fetch_*.sh because Ubuntu's
 # are too old: Eigen (3.4.0 < required 5.x snapshot), fmt (9.1 < 10, Blender
-# uses format_as), OpenColorIO (2.1.3 < 2.3 static_assert). scripts/build.sh
-# passes their locations (Eigen3_DIR, fmt_ROOT, OpenColorIO_DIR).
+# uses format_as), OpenColorIO (2.1.3 < 2.3 static_assert), OpenImageIO (2.4's
+# bundled fmt clashes with fmt 12). scripts/build.sh passes their locations
+# (Eigen3_DIR, fmt_DIR, OpenColorIO_DIR, OpenImageIO_DIR).
 set(WITH_STRICT_BUILD_OPTIONS OFF CACHE BOOL "" FORCE)
 set(CMAKE_BUILD_TYPE         Release CACHE STRING "" FORCE)
 

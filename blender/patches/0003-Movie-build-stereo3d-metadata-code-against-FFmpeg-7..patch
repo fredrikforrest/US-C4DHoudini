@@ -1,0 +1,32 @@
+From 35f4533ec7516a34cf085bafca3828494306d4c4 Mon Sep 17 00:00:00 2001
+From: fredrikforrest <fredrik@untitledservices.com>
+Date: Sat, 31 Oct 2026 01:31:59 +0000
+Subject: [PATCH 3/3] Movie: build stereo3d metadata code against FFmpeg < 7.1
+
+AV_STEREO3D_UNSPEC only exists from FFmpeg 7.1 (libavutil 59.26). Fall back
+to AV_STEREO3D_2D as the 'not interlaced' default on older FFmpeg, such as
+the 6.1 shipped by Ubuntu 24.04.
+---
+ source/blender/imbuf/movie/intern/movie_write.cc | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/source/blender/imbuf/movie/intern/movie_write.cc b/source/blender/imbuf/movie/intern/movie_write.cc
+index 814218da..9db00171 100644
+--- a/source/blender/imbuf/movie/intern/movie_write.cc
++++ b/source/blender/imbuf/movie/intern/movie_write.cc
+@@ -243,7 +243,12 @@ static void add_stereo3d_metadata(AVCodecParameters *codecpar,
+     return;
+   }
+   AVStereo3D *stereo_3d = reinterpret_cast<AVStereo3D *>(side_data->data);
++#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(59, 26, 100)
+   AVStereo3DType interlace_type = AV_STEREO3D_UNSPEC;
++#else
++  /* `AV_STEREO3D_UNSPEC` was added in FFmpeg 7.1. */
++  AVStereo3DType interlace_type = AV_STEREO3D_2D;
++#endif
+   switch (imf.stereo3d_format.interlace_type) {
+     case S3D_INTERLACE_ROW:
+       interlace_type = AV_STEREO3D_LINES;
+-- 
+2.43.0
+

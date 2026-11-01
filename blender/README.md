@@ -3,12 +3,20 @@
 Everything needed to stand up and maintain our own fork of Blender, prepared
 against **Blender 5.2.3 (LTS)**, the latest stable release as of 2026-10-30.
 
+**Building for Windows (PC)?** Go straight to `docs/04-windows-build.md` and
+`scripts/build_windows.ps1`. Windows uses upstream's prebuilt libraries and
+`make.bat`, so none of the Linux dependency workarounds below apply; the fork
+patches are the same.
+
 ```
 blender/
   README.md                      this file: status, how to build, what is on/off
   docs/01-architecture.md        tour of the source tree and its subsystems
   docs/02-adding-features.md     recipes: Python operator, app template, C++ operator, node, DNA/RNA, modifier, IO, branding
   docs/03-fork-workflow.md       repository layout, tracking upstream LTS, keeping the diff small, releases
+  docs/04-windows-build.md       building and packaging on Windows with Visual Studio and make.bat
+  scripts/build_windows.ps1      one-shot Windows build: clone, patches, make.bat update, make.bat <target>, zip
+  ci/windows-build.yml           GitHub Actions workflow for Windows builds of the fork (untested here)
   cmake/fork_linux_syslibs.cmake CMake preset: build against Ubuntu 24.04 packages instead of Blender's prebuilt libs
   scripts/bootstrap_ubuntu2404.sh  apt packages + Python 3.13 NumPy
   scripts/fetch_eigen.sh         Eigen snapshot Blender pins (Ubuntu's 3.4.0 is too old)

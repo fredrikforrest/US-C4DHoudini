@@ -1,0 +1,61 @@
+# GitHub Actions: build the Blender fork for Windows x64 and upload a portable zip.
+#
+# Copy to .github/workflows/windows-build.yml in the FORK repository (the one
+# that contains Blender's source with fork/main). Not yet executed; see
+# docs/04-windows-build.md section 7 for the disk-space caveat on hosted runners.
+name: Windows build
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "make.bat target (full, lite, release)"
+        default: "full"
+  push:
+    tags: ["fork-v*"]
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 350
+    steps:
+      - name: Check out fork source (LFS objects come from upstream in the next step)
+        uses: actions/checkout@v4
+        with:
+          lfs: false
+          fetch-depth: 1
+
+      - name: Pull Git LFS data files from projects.blender.org
+        shell: pwsh
+        run: |
+          git lfs install --skip-smudge
+          git config lfs.url https://projects.blender.org/blender/blender.git/info/lfs
+          git lfs pull
+
+      - name: Free disk space report
+        shell: pwsh
+        run: Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{n='FreeGB';e={[math]::Round($_.Free/1GB,1)}}
+
+      - name: Prebuilt libraries (lib/windows_x64)
+        shell: cmd
+        run: make.bat update
+
+      - name: Build
+        shell: cmd
+        run: make.bat ninja ${{ github.event.inputs.target || 'full' }}
+
+      - name: Locate build output
+        id: out
+        shell: pwsh
+        run: |
+          $build = Get-ChildItem .. -Directory -Filter "build_windows_*" | Select-Object -First 1
+          $bin = Join-Path $build.FullName "bin\Release"
+          & (Join-Path $bin "blender.exe") --version | Select-Object -First 1
+          "bin=$bin" >> $env:GITHUB_OUTPUT
+
+      - name: Upload portable build
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-fork-windows-x64-${{ github.sha }}
+          path: ${{ steps.out.outputs.bin }}
+          compression-level: 6
